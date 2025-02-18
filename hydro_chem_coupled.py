@@ -37,8 +37,8 @@ Lx = 10.0  # Domain length
 x = np.linspace(0, Lx, nx)  # Spatial grid
 
 dx = x[1] - x[0]  # Spatial resolution
-total_time = 1.0  # Total simulation time
-dt = 0.005  # Time step
+total_time = 3.0  # Total simulation time
+dt = 0.01  # Time step
 nt = int(total_time / dt)  # Number of time steps
 
 # Gas properties (density, velocity, pressure)
@@ -67,6 +67,7 @@ def ode_system(t, n):
 # Prepare data for animation
 snapshots = []
 reference_snapshots = []
+diff_snapshots = []
 
 # Helper function for chemical evolution using the trained model
 def evolve_chemistry(n_species_cell, dt):
@@ -85,6 +86,7 @@ for t in range(nt):
 
     # Chemistry update using DeepONet and reference ODE solver
     reference_state = np.zeros_like(n_species)
+    diff_state      = np.zeros_like(n_species) 
     for i in range(nx):
         # Update using DeepONet
         n_species[i, :] = evolve_chemistry(n_species[i, :], dt)
@@ -95,18 +97,27 @@ for t in range(nt):
         sol = solve_ivp(ode_system, t_span, initial_conditions, method='RK45')
         reference_state[i, :] = sol.y[:, -1]  # Take the final state at t = dt
 
+        #abs difference
+        diff_state[i, :] = np.abs(n_species[i, :] - reference_state[i, :])
+
     # Save snapshots for animation
     if t % 10 == 0:
         snapshots.append(n_species.copy())
         reference_snapshots.append(reference_state.copy())
+        diff_snapshots.append(diff_state.copy())
 
 # Set up the animation
-fig, axs = plt.subplots(1, 2, figsize=(16, 6))
+fig, axs = plt.subplots(1, 3, figsize=(16, 6))
 lines_emulated = [
     axs[0].plot(x, snapshots[0][:, i], label=f"n{i+1} (Emulated)")[0] for i in range(3)
 ]
+
 lines_reference = [
     axs[1].plot(x, reference_snapshots[0][:, i], label=f"n{i+1} (Reference)")[0] for i in range(3)
+]
+
+lines_diff = [
+    axs[2].plot(x, diff_snapshots[0][:, i], label=f"n{i+1} (diff)")[0] for i in range(3)
 ]
 
 for ax in axs:
@@ -117,6 +128,7 @@ for ax in axs:
 
 axs[0].set_title("Emulated Evolution of Chemical Species")
 axs[1].set_title("Reference Evolution of Chemical Species")
+axs[2].set_title("Errors of Chemical Species")
 
 # Animation update function
 def update(frame):
@@ -124,9 +136,13 @@ def update(frame):
         line.set_ydata(snapshots[frame][:, i])
     for i, line in enumerate(lines_reference):
         line.set_ydata(reference_snapshots[frame][:, i])
+    for i, line in enumerate(lines_diff):
+        line.set_ydata(diff_snapshots[frame][:, i])
+
     axs[0].set_title(f"Emulated Evolution (Time: {frame * dt * 10:.2f})")
     axs[1].set_title(f"Reference Evolution (Time: {frame * dt * 10:.2f})")
-    return lines_emulated + lines_reference
+    axs[2].set_title(f"Diff Evolution (Time: {frame * dt * 10:.2f})")
+    return lines_emulated + lines_reference + lines_diff
 
 ani = FuncAnimation(fig, update, frames=len(snapshots), blit=True)
 
