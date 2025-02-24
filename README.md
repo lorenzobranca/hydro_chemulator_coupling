@@ -3,6 +3,8 @@
 ## Overview
 This project explores the integration of **trained chemical emulators** into **astrophysical hydrodynamics simulations**. The goal is to replace expensive on-the-fly chemical network solvers with **machine-learning-based surrogates**, significantly reducing computational cost while maintaining accuracy.
 
+**Benchmark:**
+
 This repository contains **two toy models** demonstrating this approach:
 1. A **standard chemical evolution model** in a simplified 1D hydrodynamic setup.
 2. A **stiff chemical system model**, incorporating a more complex reaction network with highly varying timescales.
