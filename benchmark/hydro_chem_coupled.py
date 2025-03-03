@@ -109,15 +109,15 @@ for t in range(nt):
 # Set up the animation
 fig, axs = plt.subplots(1, 3, figsize=(16, 6))
 lines_emulated = [
-    axs[0].plot(x, snapshots[0][:, i], label=f"n{i+1} (Emulated)")[0] for i in range(3)
+    axs[0].plot(x, snapshots[0][:, i]/density, label=f"n{i+1} (Emulated)")[0] for i in range(3)
 ]
 
 lines_reference = [
-    axs[1].plot(x, reference_snapshots[0][:, i], label=f"n{i+1} (Reference)")[0] for i in range(3)
+    axs[1].plot(x, reference_snapshots[0][:, i]/density, label=f"n{i+1} (Reference)")[0] for i in range(3)
 ]
 
 lines_diff = [
-    axs[2].plot(x, diff_snapshots[0][:, i], label=f"n{i+1} (diff)")[0] for i in range(3)
+    axs[2].plot(x, diff_snapshots[0][:, i]/density, label=f"n{i+1} (diff)")[0] for i in range(3)
 ]
 
 for ax in axs:
