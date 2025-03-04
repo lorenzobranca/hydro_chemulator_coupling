@@ -88,11 +88,21 @@ def evolve_chemistry(n_species_cell, dt):
 
 # Time integration loop
 for t in range(nt):
+
+    n_species[:, 0] = n_species[:,0]/density
+    n_species[:, 1] = n_species[:,1]/density
+    n_species[:, 2] = n_species[:,2]/density
+
     print(t)
     # Hydrodynamic step (simple explicit advection as placeholder)
     density[1:-1] -= dt / dx * (velocity[2:] * density[2:] - velocity[:-2] * density[:-2])
     velocity[1:-1] -= dt / dx * ((pressure[2:] - pressure[:-2]) / density[1:-1])
     pressure = density  # Simplified isothermal equation of state
+
+    n_species[:, 0] = n_species[:,0]*density
+    n_species[:, 1] = n_species[:,1]*density
+    n_species[:, 2] = n_species[:,2]*density
+
 
     # Chemistry update using DeepONet and reference ODE solver
     reference_state = np.zeros_like(n_species)
