@@ -109,7 +109,11 @@ snapshots, reference_snapshots = [], []
 density_snapshots, velocity_snapshots, pressure_snapshots = [], [], []
 
 for t in range(nt):
-    fluxes = np.zeros((nx - 1, 3))  
+    fluxes = np.zeros((nx - 1, 3))
+    n_species[:, 0] = n_species[:,0] / density
+    n_species[:, 1] = n_species[:, 1] / density
+    n_species[:, 2] = n_species[:,2] / density
+
     for i in range(nx - 1):
         fluxes[i, :] = hll_flux(
             density[i], velocity[i], pressure[i],
@@ -124,6 +128,12 @@ for t in range(nt):
 
     velocity = momentum / density
     pressure = (gamma - 1) * (energy - 0.5 * density * velocity**2)
+
+    n_species[:, 0] = n_species[:,0] * density
+    n_species[:, 1] = n_species[:, 1] * density
+    n_species[:, 2] = n_species[:,2] * density
+
+
 
     reference_state = np.zeros_like(n_species)
     for i in range(nx):
