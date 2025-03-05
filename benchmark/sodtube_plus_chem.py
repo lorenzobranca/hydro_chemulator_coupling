@@ -142,8 +142,8 @@ for t in range(nt):
         reference_state[i, :] = sol.y[:, -1]
 
     if t % 10 == 0:
-        snapshots.append(n_species.copy())
-        reference_snapshots.append(reference_state.copy())
+        snapshots.append((n_species/np.vstack([density]*3).T).copy())
+        reference_snapshots.append((reference_state/np.vstack([density]*3).T).copy())
         density_snapshots.append(density.copy())
         velocity_snapshots.append(velocity.copy())
         pressure_snapshots.append(pressure.copy())
