@@ -110,10 +110,14 @@ density_snapshots, velocity_snapshots, pressure_snapshots = [], [], []
 
 for t in range(nt):
     fluxes = np.zeros((nx - 1, 3))
-    n_species[:, 0] = n_species[:,0] / density
-    n_species[:, 1] = n_species[:, 1] / density
-    n_species[:, 2] = n_species[:,2] / density
+    species_fluxes = np.zeros((nx - 1, 3))  # Added fluxes for chemical species
 
+    # Convert to mass fractions
+    n_species[:, 0] /= density
+    n_species[:, 1] /= density
+    n_species[:, 2] /= density
+
+    # Compute hydrodynamic fluxes
     for i in range(nx - 1):
         fluxes[i, :] = hll_flux(
             density[i], velocity[i], pressure[i],
@@ -121,6 +125,14 @@ for t in range(nt):
             gamma
         )
 
+        # Compute species flux using upwind scheme
+        for s in range(3):  # Assuming 3 species
+            species_fluxes[i, s] = (
+                velocity[i] * n_species[i, s] if velocity[i] > 0
+                else velocity[i + 1] * n_species[i + 1, s]
+            ) * density[i]  # Convert back to number density
+
+    # Update conserved variables
     density[1:-1] -= dt * (fluxes[1:, 0] - fluxes[:-1, 0]) / (x[1] - x[0])
     momentum = density * velocity
     momentum[1:-1] -= dt * (fluxes[1:, 1] - fluxes[:-1, 1]) / (x[1] - x[0])
@@ -129,24 +141,30 @@ for t in range(nt):
     velocity = momentum / density
     pressure = (gamma - 1) * (energy - 0.5 * density * velocity**2)
 
-    n_species[:, 0] = n_species[:,0] * density
-    n_species[:, 1] = n_species[:, 1] * density
-    n_species[:, 2] = n_species[:,2] * density
+    # Update species densities using flux differences
+    for s in range(3):
+        n_species[1:-1, s] -= dt * (species_fluxes[1:, s] - species_fluxes[:-1, s]) / (x[1] - x[0])
 
+    # Restore species densities from mass fractions
+    n_species[:, 0] *= density
+    n_species[:, 1] *= density
+    n_species[:, 2] *= density
 
-
+    # Chemical evolution
     reference_state = np.zeros_like(n_species)
     for i in range(nx):
         n_species[i, :] = evolve_chemistry(n_species[i, :], dt)
         sol = solve_ivp(ode_system, [0, dt], n_species[i, :], method='RK45')
         reference_state[i, :] = sol.y[:, -1]
 
+    # Store snapshots every 10 steps
     if t % 10 == 0:
-        snapshots.append((n_species/np.vstack([density]*3).T).copy())
-        reference_snapshots.append((reference_state/np.vstack([density]*3).T).copy())
+        snapshots.append((n_species / np.vstack([density] * 3).T).copy())
+        reference_snapshots.append((reference_state / np.vstack([density] * 3).T).copy())
         density_snapshots.append(density.copy())
         velocity_snapshots.append(velocity.copy())
         pressure_snapshots.append(pressure.copy())
+
 
 # Visualization
 fig, axs = plt.subplots(2, 3, figsize=(18, 10))
